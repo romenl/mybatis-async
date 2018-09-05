@@ -2,14 +2,14 @@
 mybatis-async,是封装了mybatis的异步框架。
 
 ##逻辑图如下：
-![这里写图片描述](https://github.com/LeiXuan6/mybatis-async/tree/master/src/test/java/com/gameart/async/img/mybatis-async.jpg)
+![](https://github.com/LeiXuan6/mybatis-async/tree/master/src/test/java/com/gameart/async/img/mybatis-async.jpg)
 
-##工程依赖
+#工程依赖
 + Jdk 1.8
 + Maven 3.x
 + mybits 3.x
 
-##调用示例
+#调用示例
 + 实现规范
 
    + AsyncMapper 注解 让Mapper具有异步的能力
