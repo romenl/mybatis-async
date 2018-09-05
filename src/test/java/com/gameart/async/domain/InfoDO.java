@@ -1,7 +1,4 @@
 package com.gameart.async.domain;
-
-import com.gameart.async.annotations.MapperDo;
-
 /***
  *@author JackLei
  *@Date 下午 8:56 2018/8/27
