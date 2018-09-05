@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+
+	<property name="ENCODER_PATTERN"
+			  value="%d{yyyy-MM-dd  HH:mm:ss.SSS} [%thread] %-5level %logger{80} - %msg%n" />
+
+	<property name="LOG_ROOT_PATH" value="logs" />
+
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>${ENCODER_PATTERN}</Pattern>
+		</encoder>
+	</appender>
+
+	<appender name="ERROR_FILE"
+			  class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_ROOT_PATH}/error/error.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_ROOT_PATH}/error/error-%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>30</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n
+			</pattern>
+		</encoder>
+		<append>false</append>
+		<prudent>false</prudent>
+	</appender>
+
+	<logger name="ERROR" level="DEBUG" addtivity="false">
+		<appender-ref ref="ERROR_FILE"></appender-ref>
+	</logger>
+
+	<appender name="BENCHMARK_FILE"
+			  class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_ROOT_PATH}/benchmark/benchmark.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_ROOT_PATH}/benchmark/benchmark-%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>30</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n
+			</pattern>
+		</encoder>
+		<append>false</append>
+		<prudent>false</prudent>
+	</appender>
+
+	<logger name="BENCHMARK" level="INFO" addtivity="false">
+		<appender-ref ref="BENCHMARK_FILE"></appender-ref>
+	</logger>
+
+	<root level="DEBUG">
+		<appender-ref ref="STDOUT" />
+	</root>
+</configuration>
