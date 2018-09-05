@@ -12,9 +12,9 @@ mybatis-async,是封装了mybatis的异步框架。
 #调用示例
 + 实现规范
 
-   + AsyncMapper 注解 让Mapper具有异步的能力
-   + AsyncMethod 注解 标记Mapper的某个方法是异步调用的
-   + AsyncType   注解 异步的类型
+   + AsyncMapper 注解, 让Mapper具有异步的能力
+   + AsyncMethod 注解, 标记Mapper的某个方法是异步调用的
+   + AsyncType   注解, 异步的类型
 
 + Mapper实现规范的示列
 
