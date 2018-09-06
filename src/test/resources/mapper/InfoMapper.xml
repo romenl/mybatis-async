@@ -20,8 +20,8 @@
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.gameart.async.domain.InfoMapper">
-    <resultMap id="infoDO" type="com.gameart.async.domain.InfoDO">
+<mapper namespace="com.gameart.async.mybaits.domain.InfoMapper">
+    <resultMap id="infoDO" type="com.gameart.async.mybaits.domain.InfoDO">
         <id property="id" column="id" />
         <result property="title" column="title"/>
         <result property="content" column="content"/>
@@ -39,7 +39,7 @@
         Select * from info where id = #{id}
     </select>
 
-    <update id="update" parameterType="com.gameart.async.domain.InfoDO">
+    <update id="update" parameterType="com.gameart.async.mybaits.domain.InfoDO">
         Update info set title = #{title}, content = #{content} where id = #{id}
     </update>
 

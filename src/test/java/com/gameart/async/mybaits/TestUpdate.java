@@ -1,10 +1,12 @@
-package com.gameart.async;
+package com.gameart.async.mybaits;
 
-import com.gameart.async.annotations.AsyncType;
+import com.gameart.async.AsyncConfig;
+import com.gameart.async.AsyncService;
 import com.gameart.async.api.IAsyncListener;
+import com.gameart.async.api.IAsyncQueueFullListener;
 import com.gameart.async.core.ParamBuilder;
-import com.gameart.async.domain.InfoDO;
-import com.gameart.async.domain.InfoMapper;
+import com.gameart.async.mybaits.domain.InfoDO;
+import com.gameart.async.mybaits.domain.InfoMapper;
 import com.gameart.async.exception.ConfictMethodException;
 import com.gameart.async.exception.IllegalClassException;
 import com.gameart.async.exception.IllegalMethodException;
@@ -17,6 +19,13 @@ import java.io.IOException;
  ***/
 public class TestUpdate {
     public static void main(String[] args) throws IllegalMethodException, IllegalClassException, ConfictMethodException, IOException, InterruptedException {
+        AsyncService.start(new AsyncConfig(10_000_000, 4000, 3000, new IAsyncQueueFullListener() {
+            @Override
+            public void onFull(Object o) {
+
+            }
+        }));
+
         InfoDO infoDO = new InfoDO();
         infoDO.setId(10);
         infoDO.setTitle("10");
@@ -28,7 +37,7 @@ public class TestUpdate {
             public void run() {
 
                 for(int i =0;;i++) {
-                    AsyncService.commitAsyncTask(AsyncType.UPDATE, InfoMapper.class, "update", ParamBuilder.create().addObject(infoDO), new IAsyncListener() {
+                    AsyncService.commitAsyncTask( InfoMapper.class, "update", ParamBuilder.create().addObject(infoDO), new IAsyncListener() {
                         @Override
                         public void callBack(Object o) {
 
@@ -50,7 +59,7 @@ public class TestUpdate {
             public void run() {
 
                 for(int i =0; ;i++) {
-                    AsyncService.commitAsyncTask(AsyncType.UPDATE, InfoMapper.class, "update", ParamBuilder.create().addObject(infoDO), new IAsyncListener() {
+                    AsyncService.commitAsyncTask(InfoMapper.class, "update", ParamBuilder.create().addObject(infoDO), new IAsyncListener() {
                         @Override
                         public void callBack(Object o) {
 
@@ -66,7 +75,6 @@ public class TestUpdate {
             }
         }).start();
 
-        Thread.sleep(10*1000L);
-        AsyncService.start();
+
     }
 }

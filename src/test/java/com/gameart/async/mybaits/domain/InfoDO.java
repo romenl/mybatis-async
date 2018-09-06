@@ -1,4 +1,6 @@
-package com.gameart.async.domain;
+package com.gameart.async.mybaits.domain;
+
+
 /***
  *@author JackLei
  *@Date 下午 8:56 2018/8/27

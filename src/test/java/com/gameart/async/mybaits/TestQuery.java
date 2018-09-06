@@ -1,10 +1,12 @@
-package com.gameart.async;
+package com.gameart.async.mybaits;
 
-import com.gameart.async.annotations.AsyncType;
+import com.gameart.async.AsyncConfig;
+import com.gameart.async.AsyncService;
 import com.gameart.async.api.IAsyncListener;
+import com.gameart.async.api.IAsyncQueueFullListener;
 import com.gameart.async.core.ParamBuilder;
-import com.gameart.async.domain.InfoMapper;
-import com.gameart.async.domain.SubjectMapper;
+import com.gameart.async.mybaits.domain.InfoMapper;
+import com.gameart.async.mybaits.domain.SubjectMapper;
 import com.gameart.async.exception.ConfictMethodException;
 import com.gameart.async.exception.IllegalClassException;
 import com.gameart.async.exception.IllegalMethodException;
@@ -20,8 +22,13 @@ import java.io.IOException;
 public class TestQuery {
     private static final Logger LOGGER  = LoggerFactory.getLogger(TestQuery.class);
     public static void main(String[] args) throws IllegalMethodException, IllegalClassException, ConfictMethodException, IOException, InterruptedException {
-        AsyncService.start();
-
+        AsyncService.start(new AsyncConfig(100, 1000, 3000, new IAsyncQueueFullListener() {
+            @Override
+            public void onFull(Object o) {
+                System.out.println("full >>>>>");
+            }
+        }));
+        Thread.sleep(2*1000L);
         new Thread(new Runnable() {
 
             @Override
@@ -31,7 +38,7 @@ public class TestQuery {
                 while(true) {
 
                     long curent = System.currentTimeMillis();
-                    AsyncService.commitAsyncTask(AsyncType.SELECT, InfoMapper.class, "query", ParamBuilder.create().addInteger(10), new IAsyncListener() {
+                    AsyncService.commitAsyncTask( InfoMapper.class, "query", ParamBuilder.create().addInteger(10), new IAsyncListener() {
                         @Override
                         public void callBack(Object o) {
 
@@ -56,7 +63,7 @@ public class TestQuery {
                 while(true) {
 
                     long curent = System.currentTimeMillis();
-                    AsyncService.commitAsyncTask(AsyncType.SELECT, SubjectMapper.class, "query", ParamBuilder.create().addInteger(1), new IAsyncListener() {
+                    AsyncService.commitAsyncTask(SubjectMapper.class, "query", ParamBuilder.create().addInteger(1), new IAsyncListener() {
                         @Override
                         public void callBack(Object o) {
                             System.out.println(o);

@@ -13,12 +13,9 @@ public class AsyncMethodTable {
 
     private Map<String,Method> methods =   new HashMap<>();
 
-    public boolean putMethod(String methodNameRef, Method method){
-        if(methods.containsKey(methodNameRef)){
-            return false;
-        }
+    public void putMethod(String methodNameRef, Method method){
+
         methods.put(methodNameRef,method);
-        return true;
     }
 
     public Method getMethod(String methodNameRef){

@@ -1,7 +1,7 @@
-package com.gameart.async.domain;
+package com.gameart.async.mybaits.domain;
 
-import com.gameart.async.annotations.AsyncMapper;
 import com.gameart.async.annotations.AsyncMethod;
+import com.gameart.async.annotations.AsyncMapper;
 import com.gameart.async.annotations.AsyncType;
 import org.apache.ibatis.annotations.Param;
 

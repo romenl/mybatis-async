@@ -1,4 +1,4 @@
-package com.gameart.async.domain;
+package com.gameart.async.mybaits.domain;
 
 /***
  *@author JackLei

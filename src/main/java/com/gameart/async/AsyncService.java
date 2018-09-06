@@ -24,46 +24,73 @@ import java.util.concurrent.Executors;
  ***/
 public class AsyncService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncService.class);
-
+    private static AsyncConfig config;
     private static final ConcurrentLinkedQueue<AsyncObject> QUERY_QUEUE = new ConcurrentLinkedQueue<>();
     private static final ConcurrentLinkedQueue<AsyncObject> UPDATE_QUEUE = new ConcurrentLinkedQueue<>();
 
-    public static void start() throws IOException, ConfictMethodException, IllegalMethodException, IllegalClassException {
+    public static void start(AsyncConfig config) throws IOException, ConfictMethodException, IllegalMethodException, IllegalClassException,IllegalArgumentException {
+        AsyncService.config = config;
+        check(config);
         DBManager.getInstance().start();
         MapperManager.getInstance().init();
         ExecutorService executorService = Executors.newFixedThreadPool(2);
-        executorService.execute(new QueryWorker(QUERY_QUEUE));
-        executorService.execute(new UpdateWorker(UPDATE_QUEUE));
+        executorService.execute(new QueryWorker(QUERY_QUEUE, config.queryTps));
+        executorService.execute(new UpdateWorker(UPDATE_QUEUE, config.updateTps));
     }
 
+    private static void check(AsyncConfig config) throws IllegalArgumentException{
+        if(config.queryTps<=0){
+            throw new IllegalArgumentException("AsyncConfig queryTps must be greater than 0");
+        }
+        if(config.updateTps <= 0){
+            throw new IllegalArgumentException("AsyncConfig updateTps must be greater than 0");
+        }
+        if(config.asyncQueueMax <= 0){
+            throw new IllegalArgumentException("AsyncConfig asyncQueueMax must be greater than 0");
+        }
+        if(config.queueFullListener == null){
+            throw new IllegalArgumentException("AsyncConfig queueFullListener can not be null.");
+        }
 
-    public static void commitAsyncTask(AsyncObject asyncObject) {
-        addAsyncObject(asyncObject);
     }
 
-    public static void commitAsyncTask(AsyncType type, Class mapperClazz, String methodId, ParamBuilder builder) {
-        addAsyncObject(new AsyncObject(type, mapperClazz, methodId, builder));
+    public static void commitAsyncTask(Class mapperClazz, String methodId, ParamBuilder builder) {
+        addAsyncObject(new AsyncObject(mapperClazz, methodId, builder));
     }
 
-    public static void commitAsyncTask(AsyncType type, Class mapperClazz, String methodId, ParamBuilder builder, IAsyncListener listener) {
-        addAsyncObject(new AsyncObject(type, mapperClazz, methodId, builder, listener));
+    public static void commitAsyncTask(Class mapperClazz, String methodId, ParamBuilder builder, IAsyncListener listener) {
+        addAsyncObject(new AsyncObject(mapperClazz, methodId, builder, listener));
     }
 
 
     private static void addAsyncObject(AsyncObject asyncObject) {
-        if (asyncObject.getType() == AsyncType.SELECT) {
-            QUERY_QUEUE.add(asyncObject);
-        } else if(asyncObject.getType() == AsyncType.INSERT || asyncObject.getType() == AsyncType.UPDATE ){
-            UPDATE_QUEUE.add(asyncObject);
-        }else{
-            LOGGER.error("add async object error ,can not found this type = {}",asyncObject.getType());
+        String methodId = asyncObject.getMethodId();
+        Class mapperClazz = asyncObject.getMapperClazz();
+        AsyncType asyncType = MapperManager.getInstance().getAsyncType(mapperClazz, methodId);
+        if (asyncType == null) {
+            LOGGER.error("add async object error ,asyncType is null.");
+            return;
+        }
+        if (asyncType == AsyncType.SELECT) {
+            if (AsyncService.config.asyncQueueMax <= QUERY_QUEUE.size()) {
+                AsyncService.config.queueFullListener.onFull(asyncObject);
+            } else {
+                QUERY_QUEUE.add(asyncObject);
+            }
+        } else if (asyncType == AsyncType.INSERT || asyncType == AsyncType.UPDATE) {
+            if(AsyncService.config.asyncQueueMax <= UPDATE_QUEUE.size()){
+                AsyncService.config.queueFullListener.onFull(asyncObject);
+            }else {
+                UPDATE_QUEUE.add(asyncObject);
+            }
+        } else {
+            LOGGER.error("add async object error ,can not found this type = {}", asyncType);
         }
     }
 
 
     /****
      *
-     * @param type
      * @param mapperClazz
      * @param methodId
      * @param builder 参数，可以通过{@link ParamBuilder#create()}后，调用addXX方法创建
@@ -71,11 +98,11 @@ public class AsyncService {
      * @return
      * @throws IllegalMethodException
      */
-    protected static Object execute(AsyncType type, Class mapperClazz, String methodId, ParamBuilder builder, IAsyncListener listener) throws IllegalMethodException {
-        Method asyncMethod = MapperManager.getInstance().getAsyncMethod(mapperClazz, type, methodId);
+    private static void execute(Class mapperClazz, String methodId, ParamBuilder builder, IAsyncListener listener) throws IllegalMethodException {
+        Method asyncMethod = MapperManager.getInstance().getAsyncMethod(mapperClazz, methodId);
         if (asyncMethod == null) {
-            LOGGER.error(" can not found async method  from [{}]  when  type = [{}] ,methodId =[{}] ", mapperClazz,type, methodId);
-            return null;
+            LOGGER.error(" can not found async method  from [{}]  when  methodId =[{}] ", mapperClazz, methodId);
+            return;
         }
         SqlSession session = null;
         try {
@@ -86,34 +113,32 @@ public class AsyncService {
             if (listener != null) {
                 listener.callBack(invoke);
             }
-            return invoke;
+            return;
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
             e.printStackTrace();
-        }catch(IllegalArgumentException e){
-           LOGGER.error(String.format("async method[%s] invoke error ,method param={%s}",asyncMethod,builder),e);
-        }finally {
-            if(session!=null){
+        } catch (IllegalArgumentException e) {
+            LOGGER.error(String.format("async method[%s] invoke error ,method param={%s}", asyncMethod, builder), e);
+        } finally {
+            if (session != null) {
                 session.close();
             }
         }
-        return null;
+        return;
     }
 
-    protected static Object execute(AsyncType type, Class doClazz, String methodId, ParamBuilder dto) throws IllegalMethodException {
-        return execute(type, doClazz, methodId, dto, null);
-    }
-
-    protected static Object execute(AsyncObject asyncObject) throws IllegalMethodException {
-        return execute(asyncObject.getType(),asyncObject.getMapperClazz(),asyncObject.getMethodId(),asyncObject.getBuilder(),asyncObject.getListener());
+    private static void execute(AsyncObject asyncObject) throws IllegalMethodException {
+        execute(asyncObject.getMapperClazz(), asyncObject.getMethodId(), asyncObject.getBuilder(), asyncObject.getListener());
     }
 
 
-    static class QueryWorker extends AbstractAsyncWorker {
+    static class QueryWorker extends AbstractAsyncWorker<AsyncObject> {
+        private int tps;
 
-        public QueryWorker(ConcurrentLinkedQueue<AsyncObject> queue) {
+        public QueryWorker(ConcurrentLinkedQueue<AsyncObject> queue, int tps) {
             super(queue);
+            this.tps = tps;
         }
 
         @Override
@@ -123,23 +148,25 @@ public class AsyncService {
 
         @Override
         public int getTPS() {
-            return 3000;
+            return tps;
         }
 
         @Override
-        public void execute(Object o) {
+        public void execute(AsyncObject o) {
             try {
-                AsyncService.execute((AsyncObject)o);
+                AsyncService.execute(o);
             } catch (IllegalMethodException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    static class UpdateWorker extends AbstractAsyncWorker {
+    static class UpdateWorker extends AbstractAsyncWorker<AsyncObject> {
+        private int tps;
 
-        public UpdateWorker(ConcurrentLinkedQueue<AsyncObject> queue) {
+        public UpdateWorker(ConcurrentLinkedQueue<AsyncObject> queue, int tps) {
             super(queue);
+            this.tps = tps;
         }
 
         @Override
@@ -149,13 +176,13 @@ public class AsyncService {
 
         @Override
         public int getTPS() {
-            return 2000;
+            return tps;
         }
 
         @Override
-        public void execute(Object o) {
+        public void execute(AsyncObject o) {
             try {
-                AsyncService.execute((AsyncObject)o);
+                AsyncService.execute(o);
             } catch (IllegalMethodException e) {
                 e.printStackTrace();
             }

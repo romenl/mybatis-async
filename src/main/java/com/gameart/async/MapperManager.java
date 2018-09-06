@@ -43,6 +43,24 @@ public class MapperManager {
         return asyncMethodTables.getMethod(type,methodId);
     }
 
+    public Method getAsyncMethod(Class mapperClass, String methodId) {
+        AsyncMethodTables asyncMethodTables = MAPPER_TO_ASYNC_METHODS.get(mapperClass);
+        if(asyncMethodTables == null){
+            LOGGER.error( " async method not found ,asyncMethodTables is null. doClass = {} ",mapperClass);
+            return null;
+        }
+        return asyncMethodTables.getMethod(methodId);
+    }
+
+    public AsyncType getAsyncType(Class mapperClass,String methodId){
+        AsyncMethodTables asyncMethodTables = MAPPER_TO_ASYNC_METHODS.get(mapperClass);
+        if(asyncMethodTables == null){
+            LOGGER.error( " async method not found ,asyncMethodTables is null. doClass = {} ",mapperClass);
+            return null;
+        }
+        return asyncMethodTables.getAsyncType(methodId);
+    }
+
     private void initMapperMethod(Collection<Class<?>> mappers) throws ConfictMethodException, IllegalMethodException, IllegalClassException {
         for (Class mapperClazz : mappers) {
             AsyncMethodTables asyncMethodTables = MAPPER_TO_ASYNC_METHODS.get(mapperClazz);
