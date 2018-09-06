@@ -41,7 +41,7 @@ public interface InfoMapper {
 
 + 异步任务提交示列
 ```
-     AsyncService.commitAsyncTask(AsyncType.SELECT, SubjectMapper.class, "query", ParamBuilder.create().addInteger(1), new IAsyncListener() {
+     AsyncService.commitAsyncTask(SubjectMapper.class, "query", ParamBuilder.create().addInteger(1), new IAsyncListener() {
                             @Override
                             public void callBack(Object o) {
                                 System.out.println(o);
